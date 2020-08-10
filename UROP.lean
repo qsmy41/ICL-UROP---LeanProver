@@ -53,10 +53,6 @@ begin
   repeat {linarith,},
 end
 
-#check real.exists_sup
-variable u : ℕ → ℝ
-#check u
-
 lemma bounded_above_and_increasing_func_converges
 (u : ℕ → ℝ) (bounded_above : ∃ x : ℝ, ∀ n : ℕ, u n ≤ x) (increasing : non_decreasing u) :
 ∃ l : ℝ, seq_limit u l :=
@@ -124,17 +120,90 @@ begin
   },
 end
 
+def partial_sum_to (a : ℕ → ℝ) (n : ℕ) := finset.sum (finset.range n) a
+notation `∑` a := partial_sum_to a
+
+lemma sum_diff {a : ℕ → ℝ} {n m : ℕ} (h₁ : n < m) : (∑ a) m - (∑ a) n = finset.sum (finset.Ico n m) a :=
+begin
+  unfold partial_sum_to, 
+  induction m with k hk,
+  {
+    exfalso, 
+    from nat.not_succ_le_zero n h₁,
+  },
+  {
+    rw [finset.sum_range_succ, finset.sum_Ico_succ_top],
+    swap, 
+    from nat.lt_succ_iff.mp h₁,
+    simp,
+    cases nat.lt_succ_iff_lt_or_eq.mp h₁,
+    {
+      specialize hk h,
+      linarith,
+    },
+    -- the line below somehow doesn't work for proving the first case
+    -- {rw [←sub_eq_add_neg, hk h]},
+    {
+      rw h, 
+      simp,
+    },
+  }
+end
+
+lemma sum_pos {a : ℕ → ℝ} {n m : ℕ} (h₁ : ∀ k : ℕ, 0 ≤ a k) : 0 ≤ finset.sum (finset.Ico n m) a :=
+begin
+  induction m with k hk,
+  {
+    rw finset.Ico.eq_empty_iff.mpr (zero_le n), 
+    simp,
+  },
+  {
+    cases le_or_lt n k,
+    {
+      rw finset.sum_Ico_succ_top h,
+      from add_nonneg hk (h₁ k),
+    },
+    {
+      rw finset.Ico.eq_empty_iff.mpr (nat.succ_le_iff.mpr h),
+      simp,
+    },
+  },
+end
+
 lemma series_of_root_numbers_converges 
 (a : ℕ → ℝ) (l : ℝ) (h_seq : seq_limit a l) (hu : ∀ n : ℕ, a n ≥ 0) 
 (l_pos : l ≥ 0) (l_lt_one: l < 1) :
-∃ x : ℝ, seq_limit (λ N, ∑ n in range N, (a n) ^ n) x :=
+∃ x : ℝ, seq_limit (λ N : ℕ , (∑ (λ n : ℕ, a n ^ n)) N) x :=
+-- ∃ x : ℝ, seq_limit (λ N, ∑ n in range N, (a n) ^ n) x :=
 begin
   apply bounded_above_and_increasing_func_converges,
   {
-    sorry
+    -- prove that the series is bounded above
+
+    sorry,
   },
   {
-    sorry
+    -- prove that the series is monotonically increasing
+    unfold non_decreasing,
+    intros n m hnm,
+    rw le_iff_lt_or_eq at hnm,
+    cases hnm with hl he,
+    {
+      have hann : ∀ n : ℕ, a n ^ n ≥ 0,
+      {
+        intros n,
+        specialize hu n,
+        exact pow_nonneg hu n,
+      },
+      refine sub_nonneg.mp _,
+      rw sum_diff hl,
+      exact sum_pos hann,
+    },
+    {
+      rw le_iff_lt_or_eq,
+      right,
+      rwa he,
+    },
   },
 end
 
