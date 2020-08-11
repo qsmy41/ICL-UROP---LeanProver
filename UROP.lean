@@ -120,6 +120,8 @@ begin
   },
 end
 
+-- The following two lemmas thanks to Jason KY
+
 def partial_sum_to (a : ℕ → ℝ) (n : ℕ) := finset.sum (finset.range n) a
 notation `∑` a := partial_sum_to a
 
