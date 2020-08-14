@@ -38,19 +38,19 @@ begin
     exact h'l,
   },
   have inter₂ : u n ≥ M - ε,
-    linarith,
+    { linarith, },
   have inter₃ : M + ε ≥ u n,
   {
     specialize ha n,
     linarith,
   },
   have inter₂' : M - u n ≤ ε,
-    linarith,
+    { linarith, },
   have inter₃' : u n - M ≤ ε,
-    linarith,
+    { linarith, },
   rw abs_le,
   split,
-  repeat {linarith,},
+  repeat { linarith, },
 end
 
 lemma bounded_above_and_increasing_func_converges
@@ -178,11 +178,100 @@ lemma series_of_root_numbers_converges
 ∃ x : ℝ, seq_limit (λ N : ℕ , (∑ (λ n : ℕ, a n ^ n)) N) x :=
 -- ∃ x : ℝ, seq_limit (λ N, ∑ n in range N, (a n) ^ n) x :=
 begin
+  have hann : ∀ n : ℕ, a n ^ n ≥ 0,
+  {
+    intros n,
+    specialize hu n,
+    exact pow_nonneg hu n,
+  },
   apply bounded_above_and_increasing_func_converges,
   {
     -- prove that the series is bounded above
-
-    sorry,
+    unfold seq_limit at h_seq,
+    specialize h_seq ((1 - l) / 2) (by linarith),
+    cases h_seq with N hN,
+    let A : ℝ := (1 + l) / 2,
+    have A_pos : A > 0,
+    {
+      have inter : (1 + l) / 2 > 0, { linarith, },
+      exact inter,
+    },
+    -- Below is the upper bound of the series
+    use (((∑ (λ n : ℕ, a n ^ n)) N) + A ^ N / (1 - A)),
+    intro n,
+    let hN' := hN n,
+    by_cases n ≤ N,
+    {
+      -- trivial but unfortunately long proof...
+      have hAN : A ^ N / (1 - A) > 0,
+      {
+        have temp₁ : A ^ N > 0,
+        { exact pow_pos A_pos N, },
+        have temp₂ : 1 - A > 0,
+        {
+          have inter : (1 - (1 + l) / 2 > 0), { linarith, },
+          exact inter,
+        },
+        exact div_pos temp₁ temp₂,
+      },
+      by_cases h' : n = N,
+      {
+        rw h',
+        linarith,
+      },
+      {
+        refine sub_nonneg.mp _,
+        have temp_add_sub_comm: ∀ x y z : ℝ, x + y - z = x - z + y,
+        {
+          intros x y z,
+          ring,
+        },
+        rw temp_add_sub_comm,
+        have hnN : n < N, 
+        { exact lt_of_le_of_ne h h', },
+        rw sum_diff hnN,
+        have nonneg_sum_diff : 0 ≤ finset.sum (finset.Ico n N) (λ n : ℕ, a n ^ n),
+        { exact sum_pos hann, },
+        linarith,
+      },
+    },
+    {
+      push_neg at h,
+      have h' : N ≤ n, { linarith, },
+      specialize hN' h',
+      -- The following cᵢ's are for deducing the calc block later
+      have c₁ : (∑λ (n : ℕ), a n ^ n) n - (∑λ (n : ℕ), a n ^ n) N 
+        = finset.sum (finset.Ico N n) (λ (n : ℕ), a n ^ n),
+      { exact sum_diff h, },
+      have c₂ : finset.sum (finset.Ico N n) (λ (n : ℕ), a n ^ n) 
+        ≤ finset.sum (finset.Ico N n) (λ (n : ℕ), A ^ n),
+      {
+        have temp : ∀ x ∈ Ico N n, a x ^ x ≤ A ^ x,
+        {
+          intros n' hn'Nn,
+          have haA : a n' ≤ (1 + l) / 2,
+          {
+            specialize hN n' _,
+            {
+              rw abs_le at hN,
+              cases hN,
+              linarith,
+            },
+            {
+              rwa Ico.mem at hn'Nn,
+              linarith,
+            },
+          },
+          exact pow_le_pow_of_le_left (hu n') haA n',
+        },
+        exact sum_le_sum temp,
+      },
+      calc (∑λ (n : ℕ), a n ^ n) n 
+      = (∑λ (n : ℕ), a n ^ n) N + finset.sum (finset.Ico N n) (λ (n : ℕ), a n ^ n) : by linarith
+      ... ≤ (∑λ (n : ℕ), a n ^ n) N + finset.sum (finset.Ico N n) (λ (n : ℕ), A ^ n) : by linarith
+      ... = (∑λ (n : ℕ), a n ^ n) N + (A ^ N - A ^ n) / (1 - A) : by sorry
+      ... ≤ (∑λ (n : ℕ), a n ^ n) N + A ^ N / (1 - A) : by sorry,
+    },
   },
   {
     -- prove that the series is monotonically increasing
@@ -191,12 +280,6 @@ begin
     rw le_iff_lt_or_eq at hnm,
     cases hnm with hl he,
     {
-      have hann : ∀ n : ℕ, a n ^ n ≥ 0,
-      {
-        intros n,
-        specialize hu n,
-        exact pow_nonneg hu n,
-      },
       refine sub_nonneg.mp _,
       rw sum_diff hl,
       exact sum_pos hann,
