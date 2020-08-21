@@ -1,0 +1,8 @@
+[package]
+name = "UROP-Lean"
+version = "0.1"
+lean_version = "leanprover-community/lean:3.18.4"
+path = "src"
+
+[dependencies]
+mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "67549d93c9833d95edb0e5632cac0cba6299f389"}
